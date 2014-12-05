@@ -28,6 +28,10 @@ _ReSharper*/
 [Tt]est[Rr]esult*
 *.vssscc
 $tf*/
+<<<<<<< HEAD
+*.dll
+*.sdf
+=======
 #ignore thumbnails created by windows
 #Ignore files build by Visual Studio
 *.dll
@@ -35,3 +39,4 @@ $tf*/
 *.dll
 *.suo
 *.sdf
+>>>>>>> student
