@@ -27,16 +27,10 @@ obj/
 _ReSharper*/
 [Tt]est[Rr]esult*
 *.vssscc
-$tf*/
 <<<<<<< HEAD
-*.dll
-*.sdf
+$tf*/
 =======
+$tf*/
 #ignore thumbnails created by windows
 #Ignore files build by Visual Studio
-*.dll
-*.sdf
-*.dll
-*.suo
-*.sdf
->>>>>>> student
+>>>>>>> origin/student
