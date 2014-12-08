@@ -1,7 +1,7 @@
 /*********************************************************
  *				Database - Final Project				 *
  *					1114606 유수정lk						 *
- *				봉사활동-봉사자 관리 프로그램				 *
+ *				봉사활동-봉사자 관리 프로그램			 *
  *					High-Level Lanuage					 *
  *********************************************************/
 
@@ -307,6 +307,6 @@ void searchResult_work (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_r
 			printf("+ %3s  |  %s  |  %3s  |  %10s  +\n",sql_row[0],sql_row[1],sql_row[2],sql_row[3]);	// 저장된 배열을 출력
 		}
 		printf("+-------------------------------------------------------+\n");
-		mysql_free_result(sql_result);		// Result Set 해제한다
+		mysql_free_result(sql_result);		// Result Set 해제한당
 	}
 }
