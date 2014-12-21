@@ -32,6 +32,9 @@ void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row)
 void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 void deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 
+char* searchBookInfoByTitle (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[]);
+char* showBookInfoById (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char id[]);
+
 int main(int argc, CHAR* argv[])
 {
 	MYSQL *connection = NULL;
@@ -46,21 +49,10 @@ int main(int argc, CHAR* argv[])
 	char sname[30];
 	char department[30];
 
-	char contact[30];
+	char title[30];
 	char query[200];
-	int wno = NULL;
-	char wcontent[40] = {NULL};
-	int dotime = NULL;
-	char date[15];
-	char cycle[10];
 	char state[10];
 	int i = 0;
-	int j = 9;
-
-	int n = 0;
-	int d = 0;
-	int w = 0;
-	int rs = 0;
 	int select_num;
 
 	if(mysql_init(&conn) == NULL)
@@ -91,7 +83,8 @@ int main(int argc, CHAR* argv[])
 					if(loginstate == 1) {
 						printf("You Signed in! Welcome to LIS!\n\n");
 						
-						/* 이 부분에 유저타입이 사서인지 학생인지 판별하는 쿼리*/
+						/* 유저타입이 사서인지 학생인지 판별 */
+						//id가 librarian이면 사서
 						if (strcmp(id , "librarian") ==0){
 				
 							while (true){
@@ -122,6 +115,28 @@ int main(int argc, CHAR* argv[])
 						//유저가 입력한 id가 "librarian"이 아니면 무조건 학생임
 						else {
 							printf("You're a student! Your ID is %s.\n\n",&id);
+
+							while (true){
+								printf("<< Library Information System >>\n\n");
+								printf("  1. Search a Book\n");
+								printf("  2. Show Rented Books\n");
+								printf("  0. Back\n\n  >>");
+								scanf("%d",&select_num);
+
+								if (select_num == 1){ //책 검색
+									printf("검색할 책 제목을 입력하세요.\n");
+									scanf("%s",&title);
+									searchBookInfoByTitle(&conn, sql_result, sql_row, title);
+
+								} else if (select_num == 2){  //빌린 책 보여주기
+									showBookInfoById(&conn, sql_result, sql_row, id);	
+								} else if (select_num == 0){
+									loginstate = 0;
+									break;
+
+								}else 
+									printf("Please reenter number which is correct.");
+							}
 						}
 
 					} else if (loginstate == 0) {
@@ -444,4 +459,47 @@ bool searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_RO
 		return availability;
 	} else
 		printf("error!");
+}
+
+char* searchBookInfoByTitle (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[]) {
+	char query[200];
+	int state = 0;
+	sprintf(query,"SELECT title, authors, publisher, ISBN, availability FROM book_tb WHERE title like concat('\%',concat('%s','\%'))", title);
+	state = mysql_query(connection, query);
+	if(state == 0)
+	{
+		printf("+---------------------------------------------------------------------------+\n");
+		printf("+    title    |    authors   |   publisher  |      ISBN      | availability +\n");
+		printf("+---------------------------------------------------------------------------+\n");
+		sql_result = mysql_store_result(connection);			// Result Set에 저장
+		while((sql_row = mysql_fetch_row(sql_result))!= NULL)	// Result Set에서 1개씩 배열에 가져옴
+		{
+			printf("+ %10s  |  %10s  |  %10s  |  %10s  |  %10s  +\n",sql_row[0],sql_row[1],sql_row[2],sql_row[3],sql_row[4]);	// 저장된 배열을 출력
+		}
+		printf("+---------------------------------------------------------------------------+\n");
+		mysql_free_result(sql_result);		// Result Set 해제한다
+	}
+	return title;
+}
+
+char* showBookInfoById (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char id[]) {
+	char query[200];
+	int state = 0;
+	sprintf(query,"SELECT title, authors, publisher, ISBN FROM book_tb WHERE renting_student='%s'", id);
+	state = mysql_query(connection, query);
+	if(state == 0)
+	{
+		printf("+------------------------------------------------------------+\n");
+		printf("+    title    |    authors   |   publisher  |      ISBN      +\n");
+		printf("+------------------------------------------------------------+\n");
+		sql_result = mysql_store_result(connection);			// Result Set에 저장
+		while((sql_row = mysql_fetch_row(sql_result))!= NULL)	// Result Set에서 1개씩 배열에 가져옴
+		{
+			printf("+ %10s  |  %10s  |  %10s  |  %10s  +\n",sql_row[0],sql_row[1],sql_row[2],sql_row[3]);	// 저장된 배열을 출력
+		}
+		printf("+------------------------------------------------------------+\n");
+		mysql_free_result(sql_result);		// Result Set 해제한다
+	}
+	return id;
+
 }
