@@ -24,10 +24,10 @@ int loginstate = 0; //0이면 로그인 안 된 상태, 1이면 로그인 된 상태
 
 int checkUser (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char* id, char* pw);
 
-char* searchTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
-char* searchAuthorsByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
-char* searchPublisherByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
-bool searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
+MYSQL_ROW searchTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
+MYSQL_ROW searchAuthorsByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
+MYSQL_ROW searchPublisherByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
+MYSQL_ROW searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
 void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 void deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
@@ -99,7 +99,7 @@ int main(int argc, CHAR* argv[])
 									insertBookInfo(&conn, sql_result, sql_row);
 				
 								} else if (select_num == 2){  //책 정보 수정
-								//	editBookInfo(&conn, sql_result, sql_row);
+									editBookInfo(&conn, sql_result, sql_row);
 						
 								} else if (select_num == 3){ //책 삭제
 								//	deleteBookInfo(&conn, sql_result, sql_row);
@@ -221,7 +221,9 @@ void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 	int select_edit;
 	int select_avail;
 	int id[7];
-	
+
+	MYSQL_ROW result_row;
+	//MYSQL_ROW 
 	char title[30]; 
 	char authors[10];
 	char publisher[20];
@@ -229,117 +231,124 @@ void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 	char newisbn[18];
 	char query[200];
 
-	bool availability;
-	
-	char* bookname;
-	char* authors_p;
-	char* publisher_p;
-	char* isbn_p;
+	//bool availability;	
+	//char* bookname;
+	//char* authors_p;
+	//char* publisher_p;
+	//char* isbn_p;
 
-	while(1){
 		printf("<< Edit Book Information >>\n\n");
 		printf("Please enter ISBN of the book which you want to edit information.\n");
 		printf("ISBN : ");
 		scanf("%s", isbn);
 		fflush(stdin);
-		bookname = searchTitleByISBN (connection, sql_result, sql_row, isbn);
-		if(&bookname == NULL)
-			printf("The book which you search by ISBN doesn't exist in this system.");
-		else
-			break;
-	}
-	while(1){
-		printf("The book name which you selected is %s.\n", *bookname);
-		printf("What do you want to edit the book's information?\n");
-		printf("1. Title\n");
-		printf("2. Authors\n");
-		printf("3. Publisher\n");
-		printf("4. ISBN\n");
-		printf("5. Availability\n");
-		printf("0. Back\n");
-		fflush(stdin);
-		scanf("%d", &select_edit);
-		if(select_edit == 1){ //책 title 편집
-			printf("This book's title is %s. Enter new title of the book. \n>> ", bookname);
-			scanf("%s", title);
-			sprintf(query,"update book_tb set title = '%s' where ISBN = '%s'", title, isbn);
-			mysql_query (connection, query);
-			printf("You successfully changed information of the book!\n\n");
+		result_row = searchTitleByISBN(connection, sql_result, sql_row, isbn);
+		if(result_row == NULL) {
+			return;
+		}
+		printf("searchTitleByISBN result : '%s'\n",result_row[0]);
 
-		} else if (select_edit == 2){  //책 저자 편집
-			authors_p = searchAuthorsByISBN (connection, sql_result, sql_row, isbn);
-			printf("This book's authors are %s. Enter new authors of the book.\n>> ", authors_p);
-			scanf("%s", authors);
-			sprintf(query,"update book_tb set authors = '%s' where ISBN = '%s'", authors, isbn);
-			mysql_query (connection, query);
-			printf("You successfully changed information of the book!\n\n");
+		if(result_row[0] != NULL) {
+			while(1){
+				//printf("The book name which you selected is %s.\n", result_row[0]);
+				printf("What do you want to edit the book's information?\n");
+				printf("1. Title\n");
+				printf("2. Authors\n");
+				printf("3. Publisher\n");
+				printf("4. ISBN\n");
+				printf("5. Availability\n");
+				printf("0. Back\n");
+				fflush(stdin);
+				scanf("%d", &select_edit);
+				if(select_edit == 1){ //책 title 편집
+					result_row = searchTitleByISBN(connection, sql_result, sql_row, isbn);
+					printf("This book's title is %s. Enter new title of the book. \n>> ", result_row[0]);
+					scanf("%s", title);
+					sprintf(query,"update book_tb set title = '%s' where ISBN = '%s'", title, isbn);
+					mysql_query (connection, query);
+					printf("You successfully changed information of the book!\n\n");
 
-		} else if (select_edit == 3){  //책 출판사 편집
-			publisher_p = searchPublisherByISBN (connection, sql_result, sql_row, isbn);
-			printf("This book's publisher is %s. Enter new publisher of the book.\n>> ", publisher_p);
-			scanf("%s", publisher);
-			sprintf(query,"update book_tb set publisher = '%s' where ISBN = '%s'", publisher, isbn);
-			mysql_query (connection, query);
-			printf("You successfully changed information of the book!\n\n");
+				} else if (select_edit == 2){  //책 저자 편집
+					result_row = searchAuthorsByISBN (connection, sql_result, sql_row, isbn);
+					printf("This book's authors are %s. Enter new authors of the book.\n>> ", result_row[0]);
+					scanf("%s", authors);
+					sprintf(query,"update book_tb set authors = '%s' where ISBN = '%s'", authors, isbn);
+					mysql_query (connection, query);
+					printf("You successfully changed information of the book!\n\n");
 
-		} else if (select_edit == 4){  //책 ISBN 편집
-			printf("This book's ISBN is %s. Enter new ISBN of the book.\n>> ", isbn);
-			scanf("%s", newisbn);
-			sprintf(query,"update book_tb set ISBN = '%s' where ISBN = '%s'", newisbn, isbn);
-			mysql_query (connection, query);
-			printf("You successfully changed information of the book!\n\n");
+				} else if (select_edit == 3){  //책 출판사 편집
+					result_row = searchPublisherByISBN (connection, sql_result, sql_row, isbn);
+					printf("This book's publisher is %s. Enter new publisher of the book.\n>> ", result_row[0]);
+					scanf("%s", publisher);
+					sprintf(query,"update book_tb set publisher = '%s' where ISBN = '%s'", publisher, isbn);
+					mysql_query (connection, query);
+					printf("You successfully changed information of the book!\n\n");
+
+				} else if (select_edit == 4){  //책 ISBN 편집
+					printf("This book's ISBN is %s. Enter new ISBN of the book.\n>> ", isbn);
+					scanf("%s", newisbn);
+					sprintf(query,"update book_tb set ISBN = '%s' where ISBN = '%s'", newisbn, isbn);
+					mysql_query (connection, query);
+					printf("You successfully changed information of the book!\n\n");
 		
-		} else if (select_edit == 5){  //책 대여여부 편집
-			availability = searchAvailabilityByISBN (connection, sql_result, sql_row, isbn);
-			if(availability == true){
-				while(1){
-					printf("The book can be rented. Do you want to change it?\n");
-					printf("1. Yes\n");
-					printf("2. No\n>> ");
-					scanf("%d",&select_avail);
-					if(select_avail == 1){
-						printf("Enter ID of the renting student.\n");
-						scanf("%s", id);
-						sprintf(query,"update book_tb set availavility = 'false', renting_student = '%d' where ISBN = '%s'", id, isbn);
-						mysql_query (connection, query);
-						printf("You successfully changed information of the book!\n\n");
-						break;
-					} else if (select_avail == 2){
-						break;
-					} else
-						printf("Please reenter number which is correct.");
-				}
-			} else if (availability == false){
-				while(1){
-					printf("The book have been rented. Do you want to change it?\n");
-					printf("1. Yes\n");
-					printf("2. No\n>> ");
-					scanf("%d",&select_avail);
-					if(select_avail == 1){
-						sprintf(query,"update book_tb set availavility = 'true', renting_student = null where ISBN = '%s'", isbn);
-						mysql_query (connection, query);
-						printf("You successfully changed information of the book!\n\n");
-						break;
-					} else if (select_avail == 2){
-						break;
-					} else
-						printf("Please reenter number which is correct.");
-				}
+				} else if (select_edit == 5){  //책 대여여부 편집
+					result_row = searchAvailabilityByISBN (connection, sql_result, sql_row, isbn);
+					printf("searchAvailabilityByISBN result : '%s'\n",result_row[0]);
+					if(strcmp(result_row[0], "true")){
+						while(1){
+							printf("The book can be rented. Do you want to change it?\n");
+							printf("1. Yes\n");
+							printf("2. No\n>> ");
+							scanf("%d",&select_avail);
+							if(select_avail == 1){
+								printf("Enter ID of the renting student.\n");
+								scanf("%d", id);
+								sprintf(query,"update book_tb set availability = 'false', renting_student = '%d' where ISBN = '%s'", id, isbn);
+								mysql_query (connection, query);
+								printf("You successfully changed information of the book!\n\n");
+								break;
+							} else if (select_avail == 2){
+								break;
+							} else
+								printf("Please reenter number which is correct.");
+						}
+					} else if (strcmp(result_row[0], "false")) {
+						while(1){
+							printf("The book have been rented. Do you want to change it?\n");
+							printf("1. Yes\n");
+							printf("2. No\n>> ");
+							scanf("%d",&select_avail);
+							if(select_avail == 1){
+								sprintf(query,"update book_tb set availability = 'true', renting_student = NULL where ISBN = '%s'", isbn);
+								mysql_query (connection, query);
+								printf("You successfully changed information of the book!\n\n");
+								break;
+							} else if (select_avail == 2){
+								break;
+							} else
+								printf("Please reenter number which is correct.");
+						}
+					} else {
+						printf("???");
+					}
+
+				} else if (select_edit == 0){
+					mysql_free_result(sql_result);
+					mysql_close(connection);
+					break;
+		
+				} else
+					printf("Please reenter number which is correct.");
 			}
-
-		} else if (select_edit == 0){
-			mysql_free_result(sql_result);
-			mysql_close(connection);
-			break;
-		
-		} else
-			printf("Please reenter number which is correct.");
-	}
+		} else {
+			printf("THE ISBN YOU ENTERED DOES NOT EXIST. TRY AGAIN.");
+		}
 }
 
 void deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 	
 	char isbn[18];
+	MYSQL_ROW result_row;
 	char* bookname;
 	char query[200];
 	int select_delete;
@@ -354,9 +363,9 @@ void deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row)
 		printf("ISBN : ");
 		fflush(stdin);
 		scanf("%s", isbn);
-		bookname = searchTitleByISBN (connection, sql_result, sql_row, isbn);
+		result_row = searchTitleByISBN (connection, sql_result, sql_row, isbn);
 
-		if(bookname == " ")
+		if(result_row[0] == " ")
 			printf("The book which you search by ISBN doesn't exist in this system.");
 		
 		else
@@ -388,77 +397,74 @@ void deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row)
 	mysql_close(connection);
 }
 
-char* searchTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
+MYSQL_ROW searchTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
 	char query[200];
 	int state = 0;
-	char* return_p;
-	char bookname[30];
+	MYSQL_ROW result;
+	//char bookname[30];
+	//char title[30];
 
 	sprintf(query,"SELECT title FROM book_tb WHERE ISBN = '%s'", isbn);
 	state = mysql_query(connection, query);
-	if(state == 0){
-		sql_result = mysql_store_result(connection);
-		if((sql_row = mysql_fetch_row(sql_result))== NULL){
-			*return_p = NULL;
-			mysql_free_result(sql_result);		// Result Set 해제한다
-			return return_p;
-		} else {
-			return_p = sql_row[0];
-			//bookname = sql_row[0];
-			mysql_free_result(sql_result);		// Result Set 해제한다
-			return return_p;
+	if(state == 0)
+	{
+		sql_result = mysql_store_result(connection);			// Result Set에 저장
+		if( mysql_num_fields(sql_result) == 0) {
+			printf("THE RESULT IS NOT EXIST.\n");
 		}
-	} else
-		printf("error!");
+		result = mysql_fetch_row(sql_result);
+		mysql_free_result(sql_result);// Result Set 해제한다
+	}
+	return result;
 }
 
 
-char* searchAuthorsByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
+MYSQL_ROW searchAuthorsByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
 	char query[200];
 	int state = 0;
-	char* return_p;
+	MYSQL_ROW result;
 
 	sprintf(query,"SELECT authors FROM book_tb WHERE ISBN = '%s'", isbn);
 	state = mysql_query(connection, query);
-	if(state == 0){
-		sql_result = mysql_store_result(connection);
-		return_p = sql_row[0];
-		mysql_free_result(sql_result);		// Result Set 해제한다
-		return return_p;
-	} else
-		printf("error!");
+	if(state == 0)
+	{
+		sql_result = mysql_store_result(connection);			// Result Set에 저장
+		result = mysql_fetch_row(sql_result);
+		mysql_free_result(sql_result);// Result Set 해제한다
+	}
+	return result;
 }
 	
-char* searchPublisherByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
+MYSQL_ROW searchPublisherByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
 	char query[200];
 	int state = 0;
-	char* return_p;
+	MYSQL_ROW result;
 
 	sprintf(query,"SELECT publisher FROM book_tb WHERE ISBN = '%s'", isbn);
 	state = mysql_query(connection, query);
-	if(state == 0){
-		sql_result = mysql_store_result(connection);
-		return_p = sql_row[0];
-		mysql_free_result(sql_result);		// Result Set 해제한다
-		return return_p;
-	} else
-		printf("error!");
+	if(state == 0)
+	{
+		sql_result = mysql_store_result(connection);			// Result Set에 저장
+		result = mysql_fetch_row(sql_result);
+		mysql_free_result(sql_result);// Result Set 해제한다
+	}
+	return result;
 }
 	
-bool searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
+MYSQL_ROW searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
 	char query[200];
 	int state = 0;
-	bool availability;
+	MYSQL_ROW result;
 
 	sprintf(query,"SELECT availability FROM book_tb WHERE ISBN = '%s'", isbn);
 	state = mysql_query(connection, query);
-	if(state == 0){
-		sql_result = mysql_store_result(connection);
-		availability = sql_row[0];
-		mysql_free_result(sql_result);		// Result Set 해제한다
-		return availability;
-	} else
-		printf("error!");
+	if(state == 0)
+	{
+		sql_result = mysql_store_result(connection);			// Result Set에 저장
+		result = mysql_fetch_row(sql_result);
+		mysql_free_result(sql_result);// Result Set 해제한다
+	}
+	return result;
 }
 
 char* searchBookInfoByTitle (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[]) {
