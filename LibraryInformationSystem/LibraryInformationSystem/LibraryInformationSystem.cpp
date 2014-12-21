@@ -30,6 +30,8 @@ MYSQL_ROW searchPublisherByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_
 MYSQL_ROW searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
 void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
+int updateAvailability(MYSQL*connection, bool availability, char isbn[]);
+
 void deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 
 char* searchBookInfoByTitle (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[]);
@@ -220,22 +222,18 @@ void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row)
 void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 	int select_edit;
 	int select_avail;
-	int id[7];
+	char id[20];
 
 	MYSQL_ROW result_row;
-	//MYSQL_ROW 
+
 	char title[30]; 
 	char authors[10];
 	char publisher[20];
 	char isbn[18];
 	char newisbn[18];
 	char query[200];
+	bool availability;	
 
-	//bool availability;	
-	//char* bookname;
-	//char* authors_p;
-	//char* publisher_p;
-	//char* isbn_p;
 
 		printf("<< Edit Book Information >>\n\n");
 		printf("Please enter ISBN of the book which you want to edit information.\n");
@@ -250,7 +248,6 @@ void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 
 		if(result_row[0] != NULL) {
 			while(1){
-				//printf("The book name which you selected is %s.\n", result_row[0]);
 				printf("What do you want to edit the book's information?\n");
 				printf("1. Title\n");
 				printf("2. Authors\n");
@@ -293,49 +290,16 @@ void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 		
 				} else if (select_edit == 5){  //책 대여여부 편집
 					result_row = searchAvailabilityByISBN (connection, sql_result, sql_row, isbn);
-					printf("searchAvailabilityByISBN result : '%s'\n",result_row[0]);
-					if(strcmp(result_row[0], "true")){
-						while(1){
-							printf("The book can be rented. Do you want to change it?\n");
-							printf("1. Yes\n");
-							printf("2. No\n>> ");
-							scanf("%d",&select_avail);
-							if(select_avail == 1){
-								printf("Enter ID of the renting student.\n");
-								scanf("%d", id);
-								sprintf(query,"update book_tb set availability = 'false', renting_student = '%d' where ISBN = '%s'", id, isbn);
-								mysql_query (connection, query);
-								printf("You successfully changed information of the book!\n\n");
-								break;
-							} else if (select_avail == 2){
-								break;
-							} else
-								printf("Please reenter number which is correct.");
-						}
-					} else if (strcmp(result_row[0], "false")) {
-						while(1){
-							printf("The book have been rented. Do you want to change it?\n");
-							printf("1. Yes\n");
-							printf("2. No\n>> ");
-							scanf("%d",&select_avail);
-							if(select_avail == 1){
-								sprintf(query,"update book_tb set availability = 'true', renting_student = NULL where ISBN = '%s'", isbn);
-								mysql_query (connection, query);
-								printf("You successfully changed information of the book!\n\n");
-								break;
-							} else if (select_avail == 2){
-								break;
-							} else
-								printf("Please reenter number which is correct.");
-						}
-					} else {
-						printf("???");
-					}
+					if(*result_row[0]=='1')
+						availability = true;
+					else
+						availability = false;
+					printf("searchAvailabilityByISBN result : '%d'\n",availability);
+					updateAvailability(connection, availability, isbn);
 
 				} else if (select_edit == 0){
 					mysql_free_result(sql_result);
-					mysql_close(connection);
-					break;
+					return;
 		
 				} else
 					printf("Please reenter number which is correct.");
@@ -508,4 +472,46 @@ char* showBookInfoById (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_r
 	}
 	return id;
 
+}
+
+int updateAvailability(MYSQL*connection, bool availability, char isbn[]) {
+	int select_avail;
+	char query[200];
+	char id[20];
+
+	if(availability == true){
+		while(1){
+			printf("The book can be rented. Do you want to change it?\n");
+			printf("1. Yes\n");
+			printf("2. No\n>> ");
+			scanf("%d",&select_avail);
+			if(select_avail == 1){
+				printf("Enter ID of the renting student.\n");
+				scanf("%s", id);
+				sprintf(query,"update book_tb set availability = '0', renting_student = '%s' where ISBN = '%s'", id, isbn);
+				mysql_query (connection, query);
+				printf("You successfully changed information of the book!\n\n");
+				return 0;
+			} else if (select_avail == 2){
+				return 0;
+			} else
+				printf("Please reenter number which is correct.");
+		}
+	} else{
+		while(1){
+			printf("The book have been rented. Do you want to change it?\n");
+			printf("1. Yes\n");
+			printf("2. No\n>> ");
+			scanf("%d",&select_avail);
+			if(select_avail == 1){
+				sprintf(query,"update book_tb set availability = '1', renting_student = NULL where ISBN = '%s'", isbn);
+				mysql_query (connection, query);
+				printf("You successfully changed information of the book!\n\n");
+				return 0;
+			} else if (select_avail == 2){
+				return 0;
+			} else
+				printf("Please reenter number which is correct.");
+		}
+	}
 }
