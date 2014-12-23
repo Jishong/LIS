@@ -23,8 +23,8 @@ const char *db = "library_information_system";
 //int loginstate = 0; //0이면 로그인 안 된 상태, 1이면 로그인 된 상태
 
 int checkUser (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char* id, char* pw);
-void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
-int deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
+int insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[], char authors[], char publisher[], char isbn[]);
+int deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
 void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
 MYSQL_ROW searchTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
 int updateTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]);
@@ -42,6 +42,7 @@ int main(int argc, CHAR* argv[])
 	MYSQL conn;
 	MYSQL_RES *sql_result = NULL;
     MYSQL_ROW sql_row = NULL;
+	MYSQL_ROW result_row;
 
 	int signin_state;
 
@@ -49,13 +50,16 @@ int main(int argc, CHAR* argv[])
 	char password[10];
 	char sname[30];
 	char department[30];
-
+	char isbn[18];
+	char authors[10];
+	char publisher[20];
 	char title[30];
 	char query[200];
+
 	int state;
 	int i = 0;
 	int select_num;
-
+	int select_delete;
 	if(mysql_init(&conn) == NULL)
 		printf("mysql_init() error!");
 		
@@ -92,25 +96,55 @@ int main(int argc, CHAR* argv[])
 							printf("  3. Delete Book Information\n  >>");
 							printf("  0. Back\n\n  >>");
 							scanf("%d",&select_num);
+
 							if (select_num == 1){ //책추가
-								insertBookInfo(&conn, sql_result, sql_row);
-			
+								printf("<< Register New Book >>\n\n");
+								printf("Title : ");
+								scanf("%s", title);
+								printf("Authors : ");
+								scanf("%s", authors);
+								printf("Publisher : ");
+								scanf("%s", publisher);
+								printf("ISBN : ");
+								scanf("%s", isbn);
+								insertBookInfo(&conn, sql_result, sql_row, title, authors, publisher, isbn);			
 							} else if (select_num == 2){  //책 정보 수정
 								editBookInfo(&conn, sql_result, sql_row);
-					
+						
 							} else if (select_num == 3){ //책 삭제
-								state = deleteBookInfo(&conn, sql_result, sql_row);
-								if(state == 0)
-									printf("Successfully Deleted!\n");
-								else
-									printf("Fail to Delete. Try Agian.\n");
-							} else if (select_num == 0){
-								signin_state = 0;
-								break;
-							}else 
-								printf("Please reenter number which is correct.");
+								while(1){
+									printf("<< Delete Book Information >>\n\n");
+									printf("Please enter ISBN of the book which you want to delete.\n");
+									printf("ISBN : ");
+									fflush(stdin);
+									scanf("%s", isbn);
+									result_row = searchTitleByISBN(connection, sql_result, sql_row, isbn);
+									if(result_row == NULL)
+										printf("THE ISBN IS NOT EXIST. TRY AGAIN.\n");
+									else
+										break;
+								}
+								printf("The book name which you selected is %s.\n",result_row[0]);
+								printf("Do you really want to delete?\n");
+								printf("1. Yes\n");
+								printf("2. No\n");
+								scanf("%d", &select_delete);
+		
+								if (select_delete == 1){
+									state = deleteBookInfo(&conn, sql_result, sql_row, isbn);
+									if(state == 0)
+										printf("Successfully Deleted!\n");
+									else
+										printf("Fail to Delete. Try Agian.\n");
+								}
+
+								} else if (select_num == 0){
+									signin_state = 0;
+									break;
+								}else 
+									printf("Please reenter number which is correct.");
+							}
 						}
-					}
 					//유저가 입력한 id가 "librarian"이 아니면 무조건 학생임
 					else {
 						while (true){
@@ -183,27 +217,21 @@ int checkUser (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char*
 	return loginstate;
 }
 
-void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row) {
-	char title[30]; 
-	char authors[10];
-	char publisher[20];
-	char isbn[18];
+int insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[], char authors[], char publisher[], char isbn[]) {
+	int state = 0;
 	char query[200];
-
-	printf("<< Register New Book >>\n\n");
-	printf("Title : ");
-	scanf("%s", title);
-	printf("Authors : ");
-	scanf("%s", authors);
-	printf("Publisher : ");
-	scanf("%s", publisher);
-	printf("ISBN : ");
-	scanf("%s", isbn);
-	//fflush(stdin);
 	sprintf(query,"insert into book_tb(title, authors, publisher, ISBN) values('%s', '%s', '%s', '%s')", title, authors, publisher, isbn);
-	mysql_query (connection, query);
-	printf("\nYou successfully completed registration of the new book!\n\n");
-
+	state = mysql_query (connection, query);
+	if(state == 0){
+		printf("\nYou successfully completed registration of the new book!\n\n");
+		mysql_free_result(sql_result);
+		mysql_close(connection);
+		return 0;
+	} else{
+		mysql_free_result(sql_result);
+		mysql_close(connection);
+		return 1;
+	}
 }
 
 void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
@@ -290,47 +318,17 @@ void editBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
 	}
 }
 
-int deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row){
-	
-	char isbn[18];
+int deleteBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]){
 	MYSQL_ROW result;
-	char* bookname;
 	char query[200];
-	int select_delete;
 	int state;
 
-	while(1){
-		printf("<< Delete Book Information >>\n\n");
-		printf("Please enter ISBN of the book which you want to delete.\n");
-		printf("ISBN : ");
-		fflush(stdin);
-		scanf("%s", isbn);
-		result = searchTitleByISBN (connection, sql_result, sql_row, isbn);
-
-		if(result[0] == NULL) {
-			printf("The book which you search by ISBN doesn't exist in this system.\n");
-			return 1;
-		} else {
-			printf("The book name which you selected is %s.\n",result[0]);
-			printf("Do you really want to delete?\n");
-			printf("1. Yes\n");
-			printf("2. No\n");
-			fflush(stdin);
-			scanf("%d", &select_delete);
-
-			if (select_delete == 1){
-				sprintf(query,"DELETE FROM book_tb WHERE ISBN = '%s'", isbn);
-				state = mysql_query(connection, query);
-				if(state == 0)
-					return 0;
-				else
-					return 1;
-			} else if (select_delete == 2)
-				break;
-			else
-				printf("Please reenter number which is correct.\n");
-		}
-	}
+	sprintf(query,"DELETE FROM book_tb WHERE ISBN = '%s'", isbn);
+	state = mysql_query(connection, query);
+	if(state == 0)
+		return 0;
+	else
+		return 1;
 }
 
 MYSQL_ROW searchTitleByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char isbn[]) {
