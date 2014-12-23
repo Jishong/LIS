@@ -42,7 +42,7 @@ int main(int argc, CHAR* argv[])
 	MYSQL conn;
 	MYSQL_RES *sql_result = NULL;
     MYSQL_ROW sql_row = NULL;
-	MYSQL_ROW result_row;
+	//MYSQL_ROW result_row;
 
 	int signin_state;
 
@@ -112,17 +112,17 @@ int main(int argc, CHAR* argv[])
 								editBookInfo(&conn, sql_result, sql_row);
 						
 							} else if (select_num == 3){ //√• ªË¡¶
-								while(1){
-									printf("<< Delete Book Information >>\n\n");
-									printf("Please enter ISBN of the book which you want to delete.\n");
-									printf("ISBN : ");
-									fflush(stdin);
-									scanf("%s", isbn);
-									result_row = searchTitleByISBN(connection, sql_result, sql_row, isbn);
-									if(result_row == NULL)
-										printf("THE ISBN IS NOT EXIST. TRY AGAIN.\n");
-									else
-										break;
+								printf("<< Delete Book Information >>\n\n");
+								printf("Please enter ISBN of the book which you want to delete.\n");
+								printf("ISBN : ");
+								fflush(stdin);
+								scanf("%s", isbn);
+								MYSQL_ROW result_row = searchTitleByISBN(&conn, sql_result, sql_row, isbn);
+								//printf("searchTitleByISBN result : %s\n",result_row[0]);
+
+								if(result_row == NULL) {
+									printf("THE ISBN IS NOT EXIST. TRY AGAIN.\n");
+									break;
 								}
 								printf("The book name which you selected is %s.\n",result_row[0]);
 								printf("Do you really want to delete?\n");
