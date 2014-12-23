@@ -20,7 +20,7 @@ const char *user = "sj7226";
 const char *pw = "1234";
 const char *db = "library_information_system";
 
-int loginstate = 0; //0이면 로그인 안 된 상태, 1이면 로그인 된 상태
+//int loginstate = 0; //0이면 로그인 안 된 상태, 1이면 로그인 된 상태
 
 int checkUser (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char* id, char* pw);
 void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row);
@@ -77,77 +77,63 @@ int main(int argc, CHAR* argv[])
 
 				signin_state = checkUser(&conn, sql_result, sql_row, id, password);
 
-				//쿼리가 잘 수행되었으면 signin_state가 0임
-				if(signin_state == 0) {
-					//loginstate가 1이면 로그인이 된 상태!
-					if(loginstate == 1) {
-						printf("You Signed in! Welcome to LIS!\n\n");
-						
-						/* 유저타입이 사서인지 학생인지 판별 */
-						//id가 librarian이면 사서
-						if (strcmp(id , "librarian") ==0){
-				
-							while (true){
-								printf("<< Library Information System >>\n\n");
-								printf("  1. Register New Book\n");
-								printf("  2. Edit Book Information\n");
-								printf("  3. Delete Book Information\n  >>");
-								printf("  0. Back\n\n  >>");
-								scanf("%d",&select_num);
-
-								if (select_num == 1){ //책추가
-									insertBookInfo(&conn, sql_result, sql_row);
-				
-								} else if (select_num == 2){  //책 정보 수정
-									editBookInfo(&conn, sql_result, sql_row);
-						
-								} else if (select_num == 3){ //책 삭제
-									state = deleteBookInfo(&conn, sql_result, sql_row);
-									if(state == 0)
-										printf("Successfully Deleted!\n");
-									else
-										printf("Fail to Delete. Try Agian.\n");
-
-								} else if (select_num == 0){
-									loginstate = 0;
-									break;
-
-								}else 
-									printf("Please reenter number which is correct.");
-							}
+				//signin_state가 1이면 로그인이 된 상태!
+				if(signin_state == 1) {
+					printf("You Signed in! Welcome to LIS!\n\n");
+					
+					/* 유저타입이 사서인지 학생인지 판별 */
+					//id가 librarian이면 사서
+					if (strcmp(id , "librarian") ==0){
+			
+						while (true){
+							printf("<< Library Information System >>\n\n");
+							printf("  1. Register New Book\n");
+							printf("  2. Edit Book Information\n");
+							printf("  3. Delete Book Information\n  >>");
+							printf("  0. Back\n\n  >>");
+							scanf("%d",&select_num);
+							if (select_num == 1){ //책추가
+								insertBookInfo(&conn, sql_result, sql_row);
+			
+							} else if (select_num == 2){  //책 정보 수정
+								editBookInfo(&conn, sql_result, sql_row);
+					
+							} else if (select_num == 3){ //책 삭제
+								state = deleteBookInfo(&conn, sql_result, sql_row);
+								if(state == 0)
+									printf("Successfully Deleted!\n");
+								else
+									printf("Fail to Delete. Try Agian.\n");
+							} else if (select_num == 0){
+								signin_state = 0;
+								break;
+							}else 
+								printf("Please reenter number which is correct.");
 						}
-						//유저가 입력한 id가 "librarian"이 아니면 무조건 학생임
-						else {
-							while (true){
-								printf("<< Library Information System >>\n\n");
-								printf("  1. Search a Book\n");
-								printf("  2. Show Rented Books\n");
-								printf("  0. Back\n\n  >>");
-								scanf("%d",&select_num);
-
-								if (select_num == 1){ //책 검색
-									printf("검색할 책 제목을 입력하세요.\n");
-									scanf("%s",&title);
-									searchBookInfoByTitle(&conn, sql_result, sql_row, title);
-
-								} else if (select_num == 2){  //빌린 책 보여주기
-									showBookInfoById(&conn, sql_result, sql_row, id);	
-								} else if (select_num == 0){
-									loginstate = 0;
-									break;
-
-								}else 
-									printf("Please reenter number which is correct.");
-							}
-						}
-
-					} else if (loginstate == 0) {
-						printf("Sign in failed! Try again.\n\n");
 					}
-				}
-				//checkUser함수의 쿼리가 실행이 안 된 경우
-				else {
-					printf("Cannot Connect to the System! \n\n");
+					//유저가 입력한 id가 "librarian"이 아니면 무조건 학생임
+					else {
+						while (true){
+							printf("<< Library Information System >>\n\n");
+							printf("  1. Search a Book\n");
+							printf("  2. Show Rented Books\n");
+							printf("  0. Back\n\n  >>");
+							scanf("%d",&select_num);
+							if (select_num == 1){ //책 검색
+								printf("검색할 책 제목을 입력하세요.\n");
+								scanf("%s",&title);
+								searchBookInfoByTitle(&conn, sql_result, sql_row, title);
+							} else if (select_num == 2){  //빌린 책 보여주기
+								showBookInfoById(&conn, sql_result, sql_row, id);	
+							} else if (select_num == 0){
+								signin_state = 0;
+								break;
+							}else 
+								printf("Please reenter number which is correct.");
+						}
+					}
+				} else if (signin_state == 0) {
+					printf("Sign in failed! Try again.\n\n");
 				}
 
 			} else if( i == 2) {
@@ -176,6 +162,7 @@ int main(int argc, CHAR* argv[])
 }
 int checkUser (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char* id, char* pw) {
 	char query[200];
+	int loginstate;
 	int state; //단순히 쿼리가 실행되었는지 아닌지 알려줌, 실행되면 0을 반환
 	sprintf(query,"SELECT * FROM user_tb WHERE ID='%s' AND password='%s'", id, pw);
 	state = mysql_query(connection, query);
@@ -193,7 +180,7 @@ int checkUser (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char*
 	else {
 		printf("checkUser 쿼리수행안됨 \n");
 	}
-	return state;
+	return loginstate;
 }
 
 void insertBookInfo (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row) {
@@ -467,7 +454,7 @@ MYSQL_ROW searchAvailabilityByISBN (MYSQL*connection, MYSQL_RES *sql_result, MYS
 int searchBookInfoByTitle (MYSQL*connection, MYSQL_RES *sql_result, MYSQL_ROW sql_row, char title[]) {
 	char query[200];
 	int state = 0;
-	sprintf(query,"SELECT title, authors, publisher, ISBN, availability FROM book_tb WHERE title like concat('\%',concat('%s','\%'))", title);
+	sprintf(query,"SELECT title, authors, publisher, ISBN, availability FROM book_tb WHERE title like \'%%%s%%\'", title); 
 	state = mysql_query(connection, query);
 	if(state == 0) {
 		printf("+---------------------------------------------------------------------------+\n");
